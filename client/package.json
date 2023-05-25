@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "audio-recorder-polyfill": "^0.4.1",
+    "axios": "^1.4.0",
     "bootstrap": "^5.2.3",
     "react": "^18.2.0",
     "react-bootstrap": "^2.7.4",
