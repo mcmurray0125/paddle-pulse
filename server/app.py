@@ -5,11 +5,11 @@ from scipy import signal
 import scipy.signal as signal
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
 def preprocess_audio(audio_data):
     # Apply a moving average filter to reduce noise
-    window_size = 10
+    window_size = 7
     filtered_data = signal.convolve(audio_data, np.ones(window_size) / window_size, mode='same')
     
     return filtered_data
@@ -42,21 +42,37 @@ def calculate_db(audio_data):
     db = 20 * np.log10(rms)
     return db
 
+consecutive_hits_threshold = 2  # Adjust the threshold for consecutive hits as per your requirements
+consecutive_misses_threshold = 10  # Adjust the threshold for consecutive misses as per your requirements
+
 @app.route("/pulse", methods=["POST"])
 def pulse():
     audio_data = np.frombuffer(request.data, dtype=np.float32)  # Convert the raw audio data to a NumPy array
-    sample_rate = 44100  # Sample rate of the audio (you may adjust this according to your setup)
+    sample_rate = 44100
     
     # Perform the pitch estimation
     frequency = estimate_pitch(audio_data, sample_rate)
     
     # Check if the frequency is within the desired range and above the threshold dB level
     if 875 <= frequency <= 1000 and calculate_db(audio_data) >= threshold_db:
-        return "hit"
+        pulse.consecutive_hits += 1
+        
+        if pulse.consecutive_hits >= consecutive_hits_threshold and pulse.consecutive_misses >= consecutive_misses_threshold:
+            pulse.consecutive_hits = 0
+            pulse.consecutive_misses = 0
+            return f"HIT"
+        else:
+            return "miss"
     else:
-        return "..."
+        pulse.consecutive_hits = 0
+        pulse.consecutive_misses += 1
+        
+        return "miss"
 
 
+# Initialize consecutive hit and miss counts as properties of the function
+pulse.consecutive_hits = 0
+pulse.consecutive_misses = 0
 
 
 if __name__ == "__main__":
