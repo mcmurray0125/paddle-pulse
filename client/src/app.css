@@ -1,3 +1,21 @@
+body {
+  overflow: hidden;
+}
 .rally-counter {
   width: 300px;
+}
+.pulse-video-left {
+  position: absolute;
+  left: 0;
+  z-index: -1;
+  left: -234px;
+  height: 100dvh;
+}
+.pulse-video-right {
+  position: absolute;
+  right: 0;
+  z-index: -1;
+  filter: hue-rotate(199deg);
+  right: -234px;
+  height: 100dvh;
 }
