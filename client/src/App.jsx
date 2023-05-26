@@ -2,31 +2,25 @@ import { useState } from 'react';
 import { Button, Card, Container } from 'react-bootstrap'
 import "./app.css"
 
-import setupAudioContext from './audio/AudioContext';
+import { useAudioContext } from "./audio/AudioContext"
 
 function App() {
   const [rallyCount, setRallyCount] = useState(0);
   const [isListening, setIsListening] = useState(false);
-  const [mediaStream, setMediaStream] = useState(null);
-  const [audioContext, setAudioContext] = useState(null);
+  const { stream, context, count, setupAudioContext, stopAudioContext } = useAudioContext();
 
   const handlePingPongClick = async () => {
     if (!isListening) {
-      const { stream, context } = await setupAudioContext();
-      if (context && stream) {
-        setIsListening(true);
-        setMediaStream(stream);
-        setAudioContext(context);
-      }
+      setIsListening(true);
+      setupAudioContext();
     } else {
       setIsListening(false);
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
-        setMediaStream(null);
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
-      if (audioContext) {
-        audioContext.close();
-        setAudioContext(null);
+      if (context) {
+        context.close();
+        stopAudioContext();
       }
     }
   };
@@ -40,7 +34,7 @@ function App() {
         </Button>
         <Card className='rally-counter text-center'>
           <Card.Header className='fs-3'>Rally</Card.Header>
-          <Card.Body className='fs-1'>{rallyCount} Hits</Card.Body>
+          <Card.Body className='fs-1'>{count} Hits</Card.Body>
         </Card>
       </Container>
     </>
