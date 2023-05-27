@@ -1,8 +1,61 @@
+:root {
+  --blue-color: #008f95;
+  --yellow-color: #e9b000;
+  --orange-color: #ff7f00;
+  --pink-color: #eb6e80;
+  --red-color: #e24e42;
+}
+
 body {
   overflow: hidden;
+  font-family: "Cairo", "sans-serif" !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  background-color: var(--blue-color) !important;
+  background-image: url("https://www.transparenttextures.com/patterns/swirl.png");
 }
-.rally-counter {
+.main-container {
+  height: 100dvh;
+}
+.play-button {
+  width: 200px;
+  font-weight: 700 !important;
+  background-image: url("https://www.transparenttextures.com/patterns/dark-matter.png");
+  background-color: var(--yellow-color) !important;
+  color: whitesmoke;
+  border: none !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+}
+.play-button:active {
+  background-color: var(--orange-color) !important;
+  border: none !important;
+}
+.counter {
+  border: none !important;
   width: 300px;
+  color: whitesmoke;
+  overflow: hidden;
+  box-shadow: 0 19px 38px rgba(0, 0, 0, 0.3), 0 15px 12px rgba(0, 0, 0, 0.22);
+}
+.counter-header {
+  background-color: var(--red-color) !important;
+  background-image: url("https://www.transparenttextures.com/patterns/45-degree-fabric-dark.png");
+}
+.counter-body {
+  background-color: var(--pink-color) !important;
+  background-image: url("https://www.transparenttextures.com/patterns/notebook.png");
+}
+.counter-footer {
+  background-color: #c85566 !important;
+  background-image: url("https://www.transparenttextures.com/patterns/notebook.png");
+}
+.count {
+  font-size: 8rem;
+  font-weight: 700;
+  text-shadow: -5px 5px 0px var(--blue-color),
+    -10px 10px 0px var(--orange-color), -15px 15px 0px var(--yellow-color),
+    -20px 20px 0px var(--red-color);
 }
 .pulse-video-left {
   position: absolute;

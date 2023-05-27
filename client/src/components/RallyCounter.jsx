@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button, Card, Container } from 'react-bootstrap'
+import { Button, Card } from 'react-bootstrap'
 import { useAudioContext } from "../audio/AudioContext"
 
 export default function RallyCounter({ isListening, setIsListening }) {
@@ -22,13 +22,20 @@ export default function RallyCounter({ isListening, setIsListening }) {
     };
   return (
     <>
-        <h2>Click to start/stop Listening</h2>
-        <Button onClick={handlePingPongClick}>
-            {isListening ? 'Stop Listening' : 'Start Listening'}
-        </Button>
-        <Card className='rally-counter text-center'>
-            <Card.Header className='fs-3'>Rally</Card.Header>
-            <Card.Body className='fs-1'>{count} Hits</Card.Body>
+        <div className='action-wrapper d-flex flex-column align-items-center gap-2'>
+          <h2 className='m-0'>Click to start/stop Listening</h2>
+          <Button onClick={handlePingPongClick} className='play-button fs-3'>
+            {isListening ? 'STOP' : 'START'}
+          </Button>
+        </div>
+        <Card className='counter text-center'>
+            <Card.Header className='counter-header fs-3 text-decoration-underline'>RALLY</Card.Header>
+            <Card.Body className='counter-body'>
+              <span className='count'>{count}</span>
+            </Card.Body>
+            <Card.Footer className='counter-footer'>
+              <span className='fs-3'>hits</span>
+            </Card.Footer>
         </Card>
     </>
   )
