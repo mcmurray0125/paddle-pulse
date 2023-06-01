@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container } from 'react-bootstrap'
 import "./app.css"
 import RallyCounter from './components/RallyCounter';
+import Header from './components/Header';
 import { useAudioContext } from "./audio/AudioContext"
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
   return (
     <>
       <Container className="main-container d-flex align-items-center flex-column pt-5 gap-4">
+        <Header isListening={isListening} setIsListening={setIsListening}/>
         <RallyCounter isListening={isListening} setIsListening={setIsListening}/>
       </Container>
     </>
