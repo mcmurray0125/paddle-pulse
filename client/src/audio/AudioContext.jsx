@@ -94,7 +94,7 @@ const AudioContextProvider = ({ children }) => {
   }, []);
 
   return (
-    <AudioContext.Provider value={{ count, stream, context, setupAudioContext, stopAudioContext }}>
+    <AudioContext.Provider value={{ count, setCount, stream, context, setupAudioContext, stopAudioContext }}>
       {children}
     </AudioContext.Provider>
   );
