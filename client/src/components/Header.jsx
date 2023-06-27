@@ -3,7 +3,7 @@ import { Button } from 'react-bootstrap'
 import { useAudioContext } from "../audio/AudioContext"
 
 export default function Header({ isListening, setIsListening }) {
-    const { stream, context, count, setupAudioContext, stopAudioContext } = useAudioContext();
+    const { stream, context, setupAudioContext, stopAudioContext } = useAudioContext();
 
     const handlePingPongClick = async () => {
         if (!isListening) {
