@@ -1,21 +1,20 @@
-import React from 'react'
 import { Button } from 'react-bootstrap'
 import { useAudioContext } from "../audio/AudioContext"
 
 export default function Header({ isListening, setIsListening }) {
-    const { stream, context, setupAudioContext, stopAudioContext } = useAudioContext();
+    const { streamRef, contextRef, setupAudioContext, stopAudioContext } = useAudioContext();
 
     const handlePingPongClick = async () => {
         if (!isListening) {
-          setIsListening(true);
           setupAudioContext();
+          setIsListening(true);
         } else {
           setIsListening(false);
-          if (stream) {
-            stream.getTracks().forEach(track => track.stop());
+          if (streamRef) {
+            streamRef.current.getTracks().forEach(track => track.stop());
           }
-          if (context) {
-            context.close();
+          if (contextRef) {
+            contextRef.current.close();
             stopAudioContext();
           }
         }
