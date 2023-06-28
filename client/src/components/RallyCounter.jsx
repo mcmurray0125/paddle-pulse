@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react'
 import { Card } from 'react-bootstrap'
 import { useAudioContext } from "../audio/AudioContext"
 
-export default function RallyCounter({ isListening, setIsListening }) {
+export default function RallyCounter() {
     const { count } = useAudioContext();
 
-    
   return (
     <>
         <Card className='counter text-center'>

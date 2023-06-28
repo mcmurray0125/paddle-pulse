@@ -1,106 +1,167 @@
 import { createContext, useState, useContext, useEffect, useRef } from 'react';
-import * as Pitchfinder from 'pitchfinder';
 
 export const AudioContext = createContext();
 
 const AudioContextProvider = ({ children }) => {
-  const [count, setCount] = useState(0);
-  const streamRef = useRef(null);
-  const contextRef = useRef(null);
+  const [count, setCount] = useState(0)
 
-  const setupAudioContext = async () => {
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const context = new AudioContext();
-      const stream = await new Promise((resolve, reject) => {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(resolve)
-          .catch(reject);
-      });
-      const source = context.createMediaStreamSource(stream);
+  let recognizer;
 
-      streamRef.current = stream;
-      contextRef.current = context;
-
-      const processor = context.createScriptProcessor(1024, 1, 1);
-      
-      source.connect(processor);
-      processor.connect(context.destination);
-      processor.onaudioprocess = handleAudioProcess;
-
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-    }
-  };
-
-  const stopAudioContext = () => {
-    const stream = streamRef.current;
-    const context = contextRef.current;
-
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-
-    if (context && context.state !== 'closed') {
-      context.close();
-      contextRef.current = null;
-    }
-  };
-
+  function predictWord() {
+   // Array of words that the recognizer is trained to recognize.
+   const words = recognizer.wordLabels();
+   recognizer.listen(({scores}) => {
+     // Turn scores into a list of (score,word) pairs.
+     scores = Array.from(scores).map((s, i) => ({score: s, word: words[i]}));
+     // Find the most probable word.
+     scores.sort((s1, s2) => s2.score - s1.score);
+     document.querySelector('#console').textContent = scores[0].word;
+   }, {probabilityThreshold: 0.75});
+  }
   
-  const handleAudioProcess = (event) => {    
-    const context = contextRef.current;
-    
-    if (!context) {
-      console.log('Audio context not fully initialized yet.');
+  async function app() {
+   recognizer = speechCommands.create('BROWSER_FFT');
+   await recognizer.ensureModelLoaded();
+
+    loadModel();
+     //  buildModel();
+  }
+  
+  app();
+
+  // One frame is ~23ms of audio.
+  const NUM_FRAMES = 3;
+  let examples = [];
+
+  function collect(label) {
+  if (recognizer.isListening()) {
+    return recognizer.stopListening();
+  }
+  if (label == null) {
+    return;
+  }
+  recognizer.listen(async ({spectrogram: {frameSize, data}}) => {
+    let vals = normalize(data.subarray(-frameSize * NUM_FRAMES));
+    examples.push({vals, label});
+    document.querySelector('#console').textContent =
+        `${examples.length} examples collected`;
+  }, {
+    overlapFactor: 0.999,
+    includeSpectrogram: true,
+    invokeCallbackOnNoiseAndUnknown: true
+  });
+  }
+
+  function normalize(x) {
+  const mean = -100;
+  const std = 10;
+  return x.map(x => (x - mean) / std);
+  }
+
+  const INPUT_SHAPE = [NUM_FRAMES, 232, 1];
+  let model;
+
+  async function train() {
+  toggleButtons(false);
+  const ys = tf.oneHot(examples.map(e => e.label), 3);
+  const xsShape = [examples.length, ...INPUT_SHAPE];
+  const xs = tf.tensor(flatten(examples.map(e => e.vals)), xsShape);
+
+  await model.fit(xs, ys, {
+    batchSize: 16,
+    epochs: 10,
+    callbacks: {
+      onEpochEnd: (epoch, logs) => {
+        document.querySelector('#console').textContent =
+            `Accuracy: ${(logs.acc * 100).toFixed(1)}% Epoch: ${epoch + 1}`;
+      }
+    }
+  });
+  tf.dispose([xs, ys]);
+  toggleButtons(true);
+  }
+
+  // function buildModel() {
+  // model = tf.sequential();
+  // model.add(tf.layers.depthwiseConv2d({
+  //   depthMultiplier: 8,
+  //   kernelSize: [NUM_FRAMES, 3],
+  //   activation: 'relu',
+  //   inputShape: INPUT_SHAPE
+  // }));
+  // model.add(tf.layers.maxPooling2d({poolSize: [1, 2], strides: [2, 2]}));
+  // model.add(tf.layers.flatten());
+  // model.add(tf.layers.dense({units: 3, activation: 'softmax'}));
+  // const optimizer = tf.train.adam(0.01);
+  // model.compile({
+  //   optimizer,
+  //   loss: 'categoricalCrossentropy',
+  //   metrics: ['accuracy']
+  // });
+  // }
+
+  async function loadModel() {
+    model = await tf.loadLayersModel('src/assets/my-model.json');
+  }
+
+  async function saveModel() {
+    await model.save('downloads://my-model');
+  }
+
+  function toggleButtons(enable) {
+  document.querySelectorAll('button').forEach(b => b.disabled = !enable);
+  }
+
+  function flatten(tensors) {
+  const size = tensors[0].length;
+  const result = new Float32Array(tensors.length * size);
+  tensors.forEach((arr, i) => result.set(arr, i * size));
+  return result;
+  }
+
+  async function moveSlider(labelTensor) {
+    const label = (await labelTensor.data())[0];
+    document.getElementById('console').textContent = label;
+    if (label == 2) {
       return;
     }
-
-    const audioData = event.inputBuffer.getChannelData(0);
-  
-    const sampleRate = context.sampleRate;
-  
-    const frequency = estimatePitch(audioData, sampleRate);
-    const db = calculateDb(audioData);
-  
-    console.log(frequency);
-
-  };
-
-  const preprocessAudio = (audioData) => {
-    // Apply your desired preprocessing to the audio data
-    return audioData;
-  };
-
-  const estimatePitch = (audioData, sampleRate) => {
-    const pitchOptions = {
-      // Choose the pitch detection algorithm and its configuration
-      sampleRate: sampleRate,
-    };
-
-    const pitchDetector = new Pitchfinder.YIN(pitchOptions);
-
-    // Preprocess the audio data if necessary
-    const preprocessedData = preprocessAudio(audioData);
-
-    // Estimate the pitch
-    const frequency = pitchDetector(preprocessedData);
-
-    return frequency; // If no pitch is detected, return 0
-  };
-
-  const calculateDb = (audioData) => {
-    // Calculate the decibel level of the audio data
-    const rms = Math.sqrt(audioData.reduce((sum, x) => sum + x * x, 0) / audioData.length);
-    const db = 20 * Math.log10(rms);
-
-    return db || 'No DB'; // If no audio data, return -Infinity
-  };
-
+    let delta = 0.1;
+    const prevValue = +document.getElementById('output').value;
+    document.getElementById('output').value =
+        prevValue + (label === 0 ? -delta : delta);
+   }
+   
+   function listen() {
+    if (recognizer.isListening()) {
+      recognizer.stopListening();
+      toggleButtons(true);
+      document.getElementById('listen').textContent = 'Listen';
+      return;
+    }
+    toggleButtons(false);
+    document.getElementById('listen').textContent = 'Stop';
+    document.getElementById('listen').disabled = false;
+   
+    recognizer.listen(async ({spectrogram: {frameSize, data}}) => {
+      const vals = normalize(data.subarray(-frameSize * NUM_FRAMES));
+      const input = tf.tensor(vals, [1, ...INPUT_SHAPE]);
+      const probs = model.predict(input);
+      const predLabel = probs.argMax(1);
+      const labelName = (await predLabel.arraySync())[0];
+      const labelProbability = (await probs.arraySync())[0];
+      console.log('Predicted Label:', labelName);
+      console.log('Probability:', labelProbability);
+      await moveSlider(predLabel);
+      tf.dispose([input, probs, predLabel]);
+    }, {
+      overlapFactor: 0.999,
+      includeSpectrogram: true,
+      invokeCallbackOnNoiseAndUnknown: true
+    });
+   }
 
   return (
-    <AudioContext.Provider value={{ count, setCount, streamRef, contextRef, setupAudioContext, stopAudioContext }}>
+    <AudioContext.Provider value={{ count, setCount, collect, train, listen, saveModel }}>
       {children}
     </AudioContext.Provider>
   );
