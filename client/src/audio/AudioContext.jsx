@@ -61,33 +61,60 @@ const AudioContextProvider = ({ children }) => {
   
     const sampleRate = context.sampleRate;
   
-    const frequency = estimatePitch(audioData, sampleRate);
+    const preProcessed = preprocessAudio(audioData)
+    const frequency = estimatePitch(preProcessed, sampleRate);
     const db = calculateDb(audioData);
   
     console.log(frequency);
-
   };
 
   const preprocessAudio = (audioData) => {
-    // Apply your desired preprocessing to the audio data
-    return audioData;
+    const windowSize = 7;
+    const filteredData = [];
+  
+    for (let i = 0; i < audioData.length; i++) {
+      let sum = 0;
+  
+      for (let j = i - Math.floor(windowSize / 2); j <= i + Math.floor(windowSize / 2); j++) {
+        const index = Math.min(Math.max(j, 0), audioData.length - 1);
+        sum += audioData[index];
+      }
+  
+      const average = sum / windowSize;
+      filteredData.push(average);
+    }
+  
+    return filteredData;
   };
+  
 
   const estimatePitch = (audioData, sampleRate) => {
-    const pitchOptions = {
-      // Choose the pitch detection algorithm and its configuration
-      sampleRate: sampleRate,
-    };
+    const bufferSize = audioData.length;
+    const autocorrelation = new Float32Array(bufferSize);
 
-    const pitchDetector = new Pitchfinder.YIN(pitchOptions);
+    // Calculate autocorrelation
+    for (let i = 0; i < bufferSize; i++) {
+      let value = 0;
+      for (let j = 0; j < bufferSize - i; j++) {
+        value += audioData[j] * audioData[j + i];
+      }
+      autocorrelation[i] = value;
+    }
 
-    // Preprocess the audio data if necessary
-    const preprocessedData = preprocessAudio(audioData);
+    // Find the peak in the autocorrelation (excluding the first sample)
+    let peakIndex = 1;
+    let peakValue = autocorrelation[1];
+    for (let i = 2; i < bufferSize; i++) {
+      if (autocorrelation[i] > peakValue) {
+        peakValue = autocorrelation[i];
+        peakIndex = i;
+      }
+    }
 
-    // Estimate the pitch
-    const frequency = pitchDetector(preprocessedData);
+    // Convert the peak index to a frequency (in Hz)
+    const frequency = sampleRate / peakIndex;
 
-    return frequency; // If no pitch is detected, return 0
+    return frequency || 0; // If no pitch is detected, return 0
   };
 
   const calculateDb = (audioData) => {
